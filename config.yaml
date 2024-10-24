@@ -2,12 +2,12 @@
 name: envio-indexer
 networks:
   - id: 8453 # Update this if needed
-    start_block: 0 # Update this based on the start block
+    start_block: 2357105 # Update this based on the start block
     contracts:
       # ORACLE / PRICE PROVIDERS
       - name: AaveOracle
-        address: '{{AaveOracleAddress}}'
-        handler: src/oracleHandlers.ts
+        address: '0x2Cc0Fc26eD4563A5ce5e8bdcfe1A2878676Ae156'
+        handler: src/eventHandlers/oracleHandlers.ts
         events:
           - event: AssetSourceUpdated(address indexed asset, address indexed source)
           - event: FallbackOracleUpdated(address indexed fallbackOracle)
@@ -15,21 +15,21 @@ networks:
 
       - name: ChainlinkAggregator
         address: '{{ChainlinkAggregatorAddress}}'
-        handler: src/oracleHandlers.ts
+        handler: src/eventHandlers/oracleHandlers.ts
         events:
           - event: AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 updatedAt)
 
       # CONFIGURATIONS
       - name: PoolAddressesProviderRegistry
-        address: '{{PoolAddressesProviderRegistryAddress}}'
-        handler: src/configHandlers.ts
+        address: '0x2f6571d3Eb9a4e350C68C36bCD2afe39530078E2'
+        handler: src/eventHandlers/configHandlers.ts
         events:
           - event: AddressesProviderRegistered(address indexed provider, uint256 indexed id)
           - event: AddressesProviderUnregistered(address indexed provider, uint256 indexed id)
 
       - name: PoolAddressesProvider
         address: '{{PoolAddressesProviderAddress}}'
-        handler: src/configHandlers.ts
+        handler: src/eventHandlers/configHandlers.ts
         events:
           - event: ProxyCreated(bytes32 indexed id, address indexed proxy, address indexed implementation)
           - event: PriceOracleUpdated(address indexed oldPriceOracle, address indexed newPriceOracle)
@@ -38,7 +38,7 @@ networks:
 
       - name: PoolConfigurator
         address: '{{PoolConfiguratorAddress}}'
-        handler: src/configHandlers.ts
+        handler: src/eventHandlers/configHandlers.ts
         events:
           - event: ReserveInitialized(address indexed asset, address indexed aToken, address stableDebtToken, address variableDebtToken, address interestRateStrategy)
           - event: ReserveBorrowing(address indexed asset, bool enabled)
@@ -59,8 +59,8 @@ networks:
 
       # REWARDS
       - name: RewardsController
-        address: '{{RewardsControllerAddress}}'
-        handler: src/configHandlers.ts
+        address: '0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44'
+        handler: src/eventHandlers/configHandlers.ts
         events:
           - event: AssetConfigUpdated(address indexed asset, address indexed emissionManager, uint256 emissionPerSecond, uint256 lastUpdateTimestamp, uint256 index)
           - event: Accrued(address indexed user, address indexed reward, address indexed asset, uint256 amount)
@@ -71,7 +71,7 @@ networks:
       # AToken / Stable / Variable
       - name: AToken
         address: '{{ATokenAddress}}'
-        handler: src/poolHandlers.ts
+        handler: src/eventHandlers/poolHandlers.ts
         events:
           - event: Burn(address indexed from, address indexed to, uint256 amount, uint256 index)
           - event: BalanceTransfer(address indexed from, address indexed to, uint256 value, uint256 index)
@@ -80,14 +80,14 @@ networks:
 
       - name: StableDebtToken
         address: '{{StableDebtTokenAddress}}'
-        handler: src/poolHandlers.ts
+        handler: src/eventHandlers/poolHandlers.ts
         events:
           - event: Burn(address indexed user, uint256 amount, uint256 index)
           - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 borrowRate)
 
       - name: VariableDebtToken
         address: '{{VariableDebtTokenAddress}}'
-        handler: src/poolHandlers.ts
+        handler: src/eventHandlers/poolHandlers.ts
         events:
           - event: Burn(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 index)
           - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 borrowRate)
@@ -95,7 +95,7 @@ networks:
       # MAIN POOL EVENTS
       - name: Pool
         address: '{{PoolAddress}}'
-        handler: src/poolHandlers.ts
+        handler: src/eventHandlers/poolHandlers.ts
         events:
           - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
           - event: Withdraw(address indexed reserve, address indexed user, address indexed to, uint256 amount)
