@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: envio-indexer
+networks:
+  - id: 8453 # Update this if needed
+    start_block: 0 # Update this based on the start block
+    contracts:
+      # ORACLE / PRICE PROVIDERS
+      - name: AaveOracle
+        address: '{{AaveOracleAddress}}'
+        handler: src/oracleHandlers.ts
+        events:
+          - event: AssetSourceUpdated(address indexed asset, address indexed source)
+          - event: FallbackOracleUpdated(address indexed fallbackOracle)
+          - event: BaseCurrencySet(address indexed baseCurrency, uint256 baseUnit)
+
+      - name: ChainlinkAggregator
+        address: '{{ChainlinkAggregatorAddress}}'
+        handler: src/oracleHandlers.ts
+        events:
+          - event: AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 updatedAt)
+
+      # CONFIGURATIONS
+      - name: PoolAddressesProviderRegistry
+        address: '{{PoolAddressesProviderRegistryAddress}}'
+        handler: src/configHandlers.ts
+        events:
+          - event: AddressesProviderRegistered(address indexed provider, uint256 indexed id)
+          - event: AddressesProviderUnregistered(address indexed provider, uint256 indexed id)
+
+      - name: PoolAddressesProvider
+        address: '{{PoolAddressesProviderAddress}}'
+        handler: src/configHandlers.ts
+        events:
+          - event: ProxyCreated(bytes32 indexed id, address indexed proxy, address indexed implementation)
+          - event: PriceOracleUpdated(address indexed oldPriceOracle, address indexed newPriceOracle)
+          - event: PoolUpdated(address indexed oldPool, address indexed newPool)
+          - event: PoolConfiguratorUpdated(address indexed oldConfigurator, address indexed newConfigurator)
+
+      - name: PoolConfigurator
+        address: '{{PoolConfiguratorAddress}}'
+        handler: src/configHandlers.ts
+        events:
+          - event: ReserveInitialized(address indexed asset, address indexed aToken, address stableDebtToken, address variableDebtToken, address interestRateStrategy)
+          - event: ReserveBorrowing(address indexed asset, bool enabled)
+          - event: CollateralConfigurationChanged(address indexed asset, uint256 ltv, uint256 liquidationThreshold, uint256 liquidationBonus)
+          - event: ReserveStableRateBorrowing(address indexed asset, bool enabled)
+          - event: ReserveActive(address indexed asset, bool active)
+          - event: ReserveFrozen(address indexed asset, bool frozen)
+          - event: ReservePaused(address indexed asset, bool paused)
+          - event: ReserveDropped(address indexed asset)
+          - event: ReserveFactorChanged(address indexed asset, uint256 reserveFactor)
+          - event: ATokenUpgraded(address indexed asset, address indexed proxy, address indexed implementation)
+          - event: BorrowCapChanged(address indexed asset, uint256 oldCap, uint256 newCap)
+          - event: BorrowableInIsolationChanged(address asset, bool enabled)
+          - event: FlashloanPremiumToProtocolUpdated(uint128 oldFee, uint128 newFee)
+          - event: FlashloanPremiumTotalUpdated(uint128 oldFee, uint128 newFee)
+          - event: LiquidationProtocolFeeChanged(address indexed asset, uint256 oldFee, uint256 newFee)
+          - event: ReserveInterestRateStrategyChanged(address indexed asset, address indexed strategy, address oldStrategy)
+
+      # REWARDS
+      - name: RewardsController
+        address: '{{RewardsControllerAddress}}'
+        handler: src/configHandlers.ts
+        events:
+          - event: AssetConfigUpdated(address indexed asset, address indexed emissionManager, uint256 emissionPerSecond, uint256 lastUpdateTimestamp, uint256 index)
+          - event: Accrued(address indexed user, address indexed reward, address indexed asset, uint256 amount)
+          - event: RewardsClaimed(address indexed user, address indexed reward, address indexed to, address claimer, uint256 amount)
+          - event: RewardOracleUpdated(address indexed reward, address indexed rewardOracle)
+          - event: EmissionManagerUpdated(address indexed oldEmissionManager, address indexed newEmissionManager)
+
+      # AToken / Stable / Variable
+      - name: AToken
+        address: '{{ATokenAddress}}'
+        handler: src/poolHandlers.ts
+        events:
+          - event: Burn(address indexed from, address indexed to, uint256 amount, uint256 index)
+          - event: BalanceTransfer(address indexed from, address indexed to, uint256 value, uint256 index)
+          - event: Mint(address indexed onBehalfOf, address indexed to, uint256 amount, uint256 index)
+          - event: Initialized(address indexed aToken, address indexed underlyingAsset, address treasury, address incentivesController, uint8 decimals)
+
+      - name: StableDebtToken
+        address: '{{StableDebtTokenAddress}}'
+        handler: src/poolHandlers.ts
+        events:
+          - event: Burn(address indexed user, uint256 amount, uint256 index)
+          - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 borrowRate)
+
+      - name: VariableDebtToken
+        address: '{{VariableDebtTokenAddress}}'
+        handler: src/poolHandlers.ts
+        events:
+          - event: Burn(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 index)
+          - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 borrowRate)
+
+      # MAIN POOL EVENTS
+      - name: Pool
+        address: '{{PoolAddress}}'
+        handler: src/poolHandlers.ts
+        events:
+          - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
+          - event: Withdraw(address indexed reserve, address indexed user, address indexed to, uint256 amount)
+          - event: Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint8 interestRateMode, uint256 borrowRate, uint16 indexed referralCode)
+          - event: Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount, bool useATokens)
+          - event: ReserveDataUpdated(address indexed reserve, uint256 liquidityRate, uint256 stableBorrowRate, uint256 variableBorrowRate, uint256 liquidityIndex, uint256 variableBorrowIndex)
+          - event: FlashLoan(address indexed target, address initiator, address indexed asset, uint256 amount, uint8 interestRateMode, uint256 premium, uint16 indexed referralCode)
+          - event: LiquidationCall(address indexed collateralAsset, address indexed debtAsset, address indexed user, uint256 debtToCover, uint256 liquidatedCollateralAmount, address liquidator, bool receiveAToken)
+          - event: MintUnbacked(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
+          - event: MintedToTreasury(address indexed reserve, uint256 amountMinted)
+          - event: ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user)
+          - event: ReserveUsedAsCollateralDisabled(address indexed reserve, address indexed user)
+          - event: UserEModeSet(address indexed user, uint8 categoryId)
