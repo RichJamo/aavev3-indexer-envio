@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=./node_modules/envio/evm.schema.json
-name: AaveV3 Indexer
-description: Aave V3 Indexer for Envio
+name: AaveV3 Full Indexer
+description: Full Aave V3 Indexer for Envio
 ecosystem: evm
 
 contracts:
+  # Oracle-related events
   - name: AaveOracle
     abi_file_path: ./src/abis/v3/AaveOracle.json
     handler: ./src/eventHandlers/oracleHandlers.ts
@@ -11,19 +12,163 @@ contracts:
       - event: AssetSourceUpdated(address indexed asset, address indexed source)
       - event: FallbackOracleUpdated(address fallbackOracle)
       - event: BaseCurrencySet(address baseCurrency, uint256 baseUnit)
+  
+  # Pool Addresses Provider-related events
+  - name: PoolAddressesProvider
+    abi_file_path: ./src/abis/v3/PoolAddressesProvider.json
+    handler: ./src/eventHandlers/poolHandlers.ts
+    events:
+      - event: AddressesProviderRegistered(address indexed provider, uint256 indexed id)
+      - event: AddressesProviderUnregistered(address indexed provider, uint256 indexed id)
+      - event: ProxyCreated(bytes32 indexed id, address indexed proxy, address indexed implementation)
+      - event: PriceOracleUpdated(address indexed oldPriceOracle, address indexed newPriceOracle)
+      - event: PoolUpdated(address indexed oldPool, address indexed newPool)
+      - event: PoolConfiguratorUpdated(address indexed oldConfigurator, address indexed newConfigurator)
+  
+  # Pool-related events (add others as needed for reserves, liquidation, etc.)
+  - name: Pool
+    abi_file_path: ./src/abis/v3/Pool.json
+    handler: ./src/eventHandlers/poolHandlers.ts
+    events:
+      - event: Upgraded(address indexed implementation)
+      - event: BackUnbacked(address indexed reserve, address indexed backer, uint256 amount, uint256 fee)
+      - event: Borrow(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint8 interestRateMode, uint256 borrowRate, uint16 indexed referralCode)
+      - event: FlashLoan(address indexed target, address initiator, address indexed asset, uint256 amount, uint8 interestRateMode, uint256 premium, uint16 indexed referralCode)
+      - event: IsolationModeTotalDebtUpdated(address indexed asset, uint256 totalDebt)
+      - event: LiquidationCall(address indexed collateralAsset, address indexed debtAsset, address indexed user, uint256 debtToCover, uint256 liquidatedCollateralAmount, address liquidator, bool receiveAToken)
+      - event: MintUnbacked(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
+      - event: MintedToTreasury(address indexed reserve, uint256 amountMinted)
+      - event: RebalanceStableBorrowRate(address indexed reserve, address indexed user)
+      - event: Repay(address indexed reserve, address indexed user, address indexed repayer, uint256 amount, bool useATokens)
+      - event: ReserveDataUpdated(address indexed reserve, uint256 liquidityRate, uint256 stableBorrowRate, uint256 variableBorrowRate, uint256 liquidityIndex, uint256 variableBorrowIndex)
+      - event: ReserveUsedAsCollateralDisabled(address indexed reserve, address indexed user)
+      - event: ReserveUsedAsCollateralEnabled(address indexed reserve, address indexed user)
+      - event: Supply(address indexed reserve, address user, address indexed onBehalfOf, uint256 amount, uint16 indexed referralCode)
+      - event: SwapBorrowRateMode(address indexed reserve, address indexed user, uint8 interestRateMode)
+      - event: UserEModeSet(address indexed user, uint8 categoryId)
+      - event: Withdraw(address indexed reserve, address indexed user, address indexed to, uint256 amount)
+
+  # ChainlinkAggregator events for price feeds
+  - name: ChainlinkAggregator
+    abi_file_path: ./src/abis/helpers/IExtendedPriceAggregator.json
+    handler: ./src/eventHandlers/oracleHandlers.ts
+    events:
+      - event: AnswerUpdated(int256 indexed current, uint256 indexed roundId, uint256 updatedAt)
+  
+  # PoolAddressesProviderRegistry Contract
+  - name: PoolAddressesProviderRegistry
+    abi_file_path: ./src/abis/v3/PoolAddressesProviderRegistry.json
+    handler: ./src/eventHandlers/registryHandlers.ts
+    events:
+      - event: AddressesProviderRegistered(address indexed provider, uint256 indexed id)
+      - event: AddressesProviderUnregistered(address indexed provider, uint256 indexed id)
+
+  # RewardsController Contract
+  - name: RewardsController
+    abi_file_path: ./src/abis/v3/RewardsController.json
+    handler: ./src/eventHandlers/rewardsControllerHandlers.ts
+    events:
+      - event: AssetConfigUpdated(address indexed asset, address indexed rewardsController, uint256 rewardPerSecond, uint256 lastUpdateTimestamp, uint256 emissionEndTimestamp, uint256 index)
+      - event: Accrued(address indexed asset, address indexed user, address indexed to, uint256 amount, uint256 index, uint256 accruedAmount)
+      - event: RewardsClaimed(address indexed user, address indexed asset, address indexed to, address claimer, uint256 amount)
+      - event: RewardOracleUpdated(address indexed asset, address indexed newOracle)
+      - event: EmissionManagerUpdated(address indexed oldManager, address indexed newManager)
+
+  # FallbackPriceOracle Contract
+  - name: FallbackPriceOracle
+    abi_file_path: ./src/abis/v3/PriceOracle.json
+    handler: ./src/eventHandlers/priceOracleHandlers.ts
+    events:
+      - event: AssetPriceUpdated(address asset, uint256 priceInEth, uint256 timestamp)
+      - event: EthPriceUpdated(uint256 ethPrice, uint256 timestamp)
+
+  # AToken Contract
+  - name: AToken
+    abi_file_path: ./src/abis/v3/AToken.json
+    handler: ./src/eventHandlers/aTokenHandlers.ts
+    events:
+      - event: Burn(address indexed from, address indexed target, uint256 amount, uint256 index, uint256 burnRate)
+      - event: BalanceTransfer(address indexed from, address indexed to, uint256 amount, uint256 index)
+      - event: Mint(address indexed from, address indexed onBehalfOf, uint256 amount, uint256 index, uint256 mintRate)
+      - event: Initialized(address indexed reserve, address indexed aToken, address stableDebtToken, address variableDebtToken, uint8 decimals, string name, string symbol, bytes params)
+
+  # StableDebtToken Contract
+  - name: StableDebtToken
+    abi_file_path: ./src/abis/v3/StableDebtToken.json
+    handler: ./src/eventHandlers/stableDebtTokenHandlers.ts
+    events:
+      - event: Burn(address indexed user, uint256 amount, uint256 stableRate, uint256 lastUpdated, uint256 burnRate, uint256 stableIndex)
+      - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 index, uint256 stableRate, uint256 lastUpdated, uint256 userStableRate, uint256 previousStableIndex)
+      - event: BorrowAllowanceDelegated(address indexed fromUser, address indexed toUser, address indexed asset, uint256 amount)
+      - event: Initialized(address indexed reserve, address indexed stableDebtToken, address variableDebtToken, uint8 decimals, string name, string symbol, bytes params)
+
+  # VariableDebtToken Contract
+  - name: VariableDebtToken
+    abi_file_path: ./src/abis/v3/VariableDebtToken.json
+    handler: ./src/eventHandlers/variableDebtTokenHandlers.ts
+    events:
+      - event: Burn(address indexed user, address indexed target, uint256 amount, uint256 index, uint256 burnRate)
+      - event: Mint(address indexed user, address indexed onBehalfOf, uint256 amount, uint256 index, uint256 mintRate)
+      - event: BorrowAllowanceDelegated(address indexed fromUser, address indexed toUser, address indexed asset, uint256 amount)
+      - event: Initialized(address indexed reserve, address indexed variableDebtToken, address stableDebtToken, uint8 decimals, string name, string symbol, bytes params)
+
+  # PoolConfigurator Contract
+  - name: PoolConfigurator
+    abi_file_path: ./src/abis/v3/PoolConfigurator.json
+    handler: ./src/eventHandlers/poolConfiguratorHandlers.ts
+    events:
+      - event: ReserveInitialized(address indexed asset, address indexed aToken, address stableDebtToken, address variableDebtToken, address interestRateStrategyAddress)
+      - event: ReserveBorrowing(address indexed asset, bool enabled)
+      - event: CollateralConfigurationChanged(address indexed asset, uint256 ltv, uint256 liquidationThreshold, uint256 liquidationBonus)
+      - event: ReserveStableRateBorrowing(address indexed asset, bool enabled)
+      - event: ReserveActive(address indexed asset, bool active)
+      - event: ReserveFrozen(address indexed asset, bool frozen)
+      - event: ReservePaused(address indexed asset, bool paused)
+      - event: ReserveDropped(address indexed asset)
+      - event: ReserveFactorChanged(address indexed asset, uint256 oldFactor, uint256 newFactor)
+      - event: ATokenUpgraded(address indexed asset, address indexed proxy, address indexed newImplementation)
+      - event: BorrowCapChanged(address indexed asset, uint256 oldCap, uint256 newCap)
+      - event: BorrowableInIsolationChanged(address indexed asset, bool isBorrowable)
+      - event: BridgeProtocolFeeUpdated(uint256 oldFee, uint256 newFee)
+      - event: DebtCeilingChanged(address indexed asset, uint256 oldCeiling, uint256 newCeiling)
+      - event: EModeAssetCategoryChanged(address indexed asset, uint8 oldCategory, uint8 newCategory)
+      - event: EModeCategoryAdded(uint8 indexed categoryId, uint256 ltv, uint256 liquidationThreshold, uint256 liquidationBonus, address priceSource, string label)
+      - event: AssetCollateralInEModeChanged(address indexed asset, uint8 categoryId, bool collateralEnabled)
+      - event: AssetBorrowableInEModeChanged(address indexed asset, uint8 categoryId, bool borrowable)
+      - event: FlashloanPremiumToProtocolUpdated(uint128 oldProtocolFee, uint128 newProtocolFee)
+      - event: FlashloanPremiumTotalUpdated(uint128 oldTotalFee, uint128 newTotalFee)
+      - event: LiquidationProtocolFeeChanged(address indexed asset, uint256 oldFee, uint256 newFee)
+      - event: ReserveInterestRateStrategyChanged(address indexed asset, address oldStrategy, address newStrategy)
+      - event: SiloedBorrowingChanged(address indexed asset, bool oldValue, bool newValue)
+      - event: StableDebtTokenUpgraded(address indexed asset, address indexed proxy, address indexed newImplementation)
+      - event: SupplyCapChanged(address indexed asset, uint256 oldCap, uint256 newCap)
+      - event: UnbackedMintCapChanged(address indexed asset, uint256 oldCap, uint256 newCap)
+      - event: VariableDebtTokenUpgraded(address indexed asset, address indexed proxy, address indexed newImplementation)
 
 networks:
-  - id: 8453 # Example network (Base mainnet)
+  # Adding multiple network configurations if needed
+  - id: 8453  # Base Mainnet
     start_block: 2357113
     contracts:
       - name: AaveOracle
         address: "0x2Cc0Fc26eD4563A5ce5e8bdcfe1A2878676Ae156" # Replace with actual contract address
-
+      - name: PoolAddressesProvider
+      - name: Pool
+      - name: ChainlinkAggregator
+      - name: PoolAddressesProviderRegistry
+      - name: RewardsController
+      - name: FallbackPriceOracle
+      - name: AToken
+      - name: StableDebtToken
+      - name: VariableDebtToken
+      - name: PoolConfigurator
+      
+  
 field_selection:
   transaction_fields:
-    - "hash"
-    - "gasUsed"
+    - hash
+    - gasUsed
   block_fields:
-    - "parentHash"
-    - "gasUsed"
-    - "miner"
+    - parentHash
+    - gasUsed
+    - miner
