@@ -1,51 +1,81 @@
-import {
-  AaveOracle,
-  AaveOracle_AssetSourceUpdated,
-  AaveOracle_FallbackOracleUpdated,
-  AaveOracle_BaseCurrencySet,
-  ChainlinkAggregator_AnswerUpdated,
-} from "generated";
+import { AaveOracle, ChainlinkAggregator, PoolAddressesProvider } from "generated";
 
 // Handle asset source updates
 AaveOracle.AssetSourceUpdated.handler(async ({ event, context }) => {
-  const entity: AaveOracle_AssetSourceUpdated = {
-    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    asset: event.params.asset,
-    source: event.params.source,
-  };
+  const assetId = event.params.asset; // Assuming asset is an address
+  const source = event.params.source;
 
-  context.AaveOracle_AssetSourceUpdated.set(entity);
+  // Fetch the PriceOracleAsset associated with this asset
+  let priceOracleAsset = await context.PriceOracleAsset.get(assetId);
+
+  if (priceOracleAsset !== undefined) {
+    // Update the priceSource field with the new source
+    priceOracleAsset = {
+      ...priceOracleAsset,
+      priceSource: source,
+    };
+
+    // Save the updated entity back to the database
+    context.PriceOracleAsset.set(priceOracleAsset);
+  } else {
+    // If the asset does not exist, you may want to log this
+    context.log.warn(`PriceOracleAsset not found for asset: ${assetId}`);
+  }
 });
 
 // Handle fallback oracle updates
 AaveOracle.FallbackOracleUpdated.handler(async ({ event, context }) => {
-  const entity: AaveOracle_FallbackOracleUpdated = {
-    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    fallbackOracle: event.params.fallbackOracle,
-  };
+  const fallbackOracleAddress = event.params.fallbackOracle;
 
-  context.AaveOracle_FallbackOracleUpdated.set(entity);
+  // Fetch the PriceOracle entity (assuming there's only one main PriceOracle)
+  let priceOracle = await context.PriceOracle.get("main_oracle");
+
+  if (priceOracle !== undefined) {
+    // Update the fallbackPriceOracle field with the new fallback address
+    priceOracle = {
+      ...priceOracle,
+      fallbackPriceOracle: fallbackOracleAddress,
+    };
+
+    // Save the updated entity back to the database
+    context.PriceOracle.set(priceOracle);
+  } else {
+    // Log a warning if the PriceOracle entity is not found
+    context.log.warn("PriceOracle entity not found.");
+  }
 });
 
 // Handle base currency updates
 AaveOracle.BaseCurrencySet.handler(async ({ event, context }) => {
-  const entity: AaveOracle_BaseCurrencySet = {
-    id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-    baseCurrency: event.params.baseCurrency,
-    baseCurrencyUnit: event.params.baseUnit,
-  };
+  const baseCurrency = event.params.baseCurrency;
+  const baseUnit = event.params.baseUnit;
 
-  context.AaveOracle_BaseCurrencySet.set(entity);
+  // Fetch the PriceOracle entity (assuming there's only one main PriceOracle)
+  let priceOracle = await context.PriceOracle.get("main_oracle");
+
+  if (priceOracle !== undefined) {
+    // Update the baseCurrency and baseCurrencyUnit fields
+    priceOracle = {
+      ...priceOracle,
+      baseCurrency: baseCurrency,
+      baseCurrencyUnit: baseUnit,
+    };
+
+    // Save the updated entity back to the database
+    context.PriceOracle.set(priceOracle);
+  } else {
+    // Log a warning if the PriceOracle entity is not found
+    context.log.warn("PriceOracle entity not found.");
+  }
 });
 
-// // Handle Chainlink price updates
-// ChainlinkAggregator.AnswerUpdated.handler(async ({ event, context }) => {
-//   const entity: ChainlinkAggregator_AnswerUpdated = {
-//     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
-//     current: event.params.current,
-//     roundId: event.params.roundId,
-//     updatedAt: event.params.updatedAt,
-//   };
+// PoolAddressesProvider.PriceOracleUpdated.handler(async ({ event, context }) => {
+//   const oldPriceOracle = event.params.oldPriceOracle;
+//   const newPriceOracle = event.params.newPriceOracle;
 
-//   context.ChainlinkAggregator_AnswerUpdated.set(entity);
+//   context.PriceOracle.set({
+//     id: newPriceOracle,
+//     proxyPriceProvider: newPriceOracle,
+//     lastUpdateTimestamp: event.block.timestamp,
+//   });
 // });

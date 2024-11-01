@@ -20,10 +20,18 @@ contracts:
     events:
       - event: AddressesProviderRegistered(address indexed provider, uint256 indexed id)
       - event: AddressesProviderUnregistered(address indexed provider, uint256 indexed id)
-      - event: ProxyCreated(bytes32 indexed id, address indexed proxy, address indexed implementation)
+      - event: ProxyCreated(bytes32 indexed id, address indexed proxyAddress, address indexed implementation)
       - event: PriceOracleUpdated(address indexed oldPriceOracle, address indexed newPriceOracle)
       - event: PoolUpdated(address indexed oldPool, address indexed newPool)
       - event: PoolConfiguratorUpdated(address indexed oldConfigurator, address indexed newConfigurator)
+      - event: PoolDataProviderUpdated(address indexed newAddress)
+      - event: AddressSet(bytes32 indexed id, address indexed newAddress, address indexed oldAddress)
+      - event: ACLAdminUpdated(address indexed newAdmin, address indexed previousAdmin)
+      - event: ACLManagerUpdated(address indexed newManager, address indexed previousManager)
+      - event: AddressSetAsProxy(bytes32 indexed id, address indexed proxyAddress, address implementation, address indexed newAddress)
+      - event: MarketIdSet(string indexed previousMarketId, string indexed newMarketId)
+      - event: OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+      - event: PriceOracleSentinelUpdated(address indexed previousOracleSentinel, address indexed newOracleSentinel)
   
   # Pool-related events (add others as needed for reserves, liquidation, etc.)
   - name: Pool
@@ -77,7 +85,7 @@ contracts:
   # FallbackPriceOracle Contract
   - name: FallbackPriceOracle
     abi_file_path: ./src/abis/v3/PriceOracle.json
-    handler: ./src/eventHandlers/priceOracleHandlers.ts
+    handler: ./src/eventHandlers/oracleHandlers.ts
     events:
       - event: AssetPriceUpdated(address asset, uint256 priceInEth, uint256 timestamp)
       - event: EthPriceUpdated(uint256 ethPrice, uint256 timestamp)
@@ -145,10 +153,23 @@ contracts:
       - event: UnbackedMintCapChanged(address indexed asset, uint256 oldCap, uint256 newCap)
       - event: VariableDebtTokenUpgraded(address indexed asset, address indexed proxy, address indexed newImplementation)
 
+  - name: DefaultReserveInterestRateStrategy
+    abi_file_path: ./src/abis/v3/DefaultReserveInterestRateStrategy.json
+    handler: ./src/eventHandlers/poolConfiguratorHandlers.ts
+    events:
+      - event: StrategySet(address indexed asset, address indexed strategy)
+
+  - name: DefaultReserveInterestRateStrategyV2
+    abi_file_path: ./src/abis/v3/DefaultReserveInterestRateStrategyV2.json
+    handler: ./src/eventHandlers/poolConfiguratorHandlers.ts
+    events:
+      - event: StrategySet(address indexed asset, address indexed strategy)
+
+
 networks:
   # Adding multiple network configurations if needed
   - id: 8453  # Base Mainnet
-    start_block: 2357113
+    start_block: 2357100
     contracts:
       - name: AaveOracle
         address: "0x2Cc0Fc26eD4563A5ce5e8bdcfe1A2878676Ae156" # Replace with actual contract address
@@ -156,13 +177,16 @@ networks:
       - name: Pool
       - name: ChainlinkAggregator
       - name: PoolAddressesProviderRegistry
+        address: "0x2f6571d3Eb9a4e350C68C36bCD2afe39530078E2"
       - name: RewardsController
+        address: "0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44"
       - name: FallbackPriceOracle
       - name: AToken
       - name: StableDebtToken
       - name: VariableDebtToken
       - name: PoolConfigurator
-      
+
+
   
 field_selection:
   transaction_fields:
